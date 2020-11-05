@@ -41,12 +41,31 @@ def seq_row(seq_chunk):
 
 def check_invalid_seq(seq):
     seq = seq
-    valid_char = set(['a', 't', 'c', 'g', 'u'])
+    valid_nucleotide = set(['a',
+                      'g',
+                      'c',
+                      't',
+                      'u',
+                      'r',
+                      'y',
+                      'm',
+                      'k',
+                      's',
+                      'w',
+                      'b',
+                      'd',
+                      'h',
+                      'v',
+                      'n'])
     for i, char in enumerate(seq):
-        if char not in valid_char:
+        if char not in valid_nucleotide:
             return [i, char]
     return None
 
+def check_nan(display_idx, dict_str):
+    for key, val in dict_str.items():
+        if val == 'nan':
+            st.warning(f'Sequence in row {display_idx} contain missing value for {key}')
 
 st.title('Sequence Listing Tool')
 
@@ -75,8 +94,6 @@ seq_list = df.iloc[:, 0].tolist()
 type_list = df.iloc[:, 1].tolist()
 org_list = df.iloc[:, 2].tolist()
 
-st.write(df)
-
 num_entry = len(seq_list)
 
 output_str = ''
@@ -94,14 +111,19 @@ if st.button('Generate sequence listing in txt'):
     output_str = output_str + process_row('')
     for idx in range(num_entry):
         display_idx = idx + 1
-        seq = seq_list[idx]
+        seq = str(seq_list[idx])
+        seq_type = str(type_list[idx])
+        org = str(org_list[idx])
+        check_nan(display_idx, {'Sequence': seq,
+                                'Sequence Type': seq_type,
+                                'Organism': org})
+
         seq = seq.replace(' ', '').lower()
         invalid_seq_status = check_invalid_seq(seq)
         if invalid_seq_status is not None:
             st.warning(f'Sequence in row {display_idx} contain invalid character ({invalid_seq_status[1]}) at position ({invalid_seq_status[0]})')
         seq_len = len(seq)
-        seq_type = type_list[idx]
-        org = org_list[idx]
+
 
         num_seq_row = math.ceil(seq_len / 60)
         chunk_seq_list = [seq[x:x + 60] for x in range(0, seq_len, 60)]
