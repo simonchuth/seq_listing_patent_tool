@@ -39,6 +39,14 @@ def seq_row(seq_chunk):
     seq_chunk_separated = ' '.join(chunklist)
     return seq_chunk_separated
 
+def check_invalid_seq(seq):
+    seq = seq
+    valid_char = set(['a', 't', 'c', 'g', 'u'])
+    for i, char in enumerate(seq):
+        if char not in valid_char:
+            return [i, char]
+    return None
+
 
 st.title('Sequence Listing Tool')
 
@@ -90,9 +98,13 @@ if st.button('Generate sequence listing in txt'):
         display_idx = idx + 1
         seq = seq_list[idx]
         seq = seq.replace(' ', '').lower()
+        invalid_seq_status = check_invalid_seq(seq)
+        if invalid_seq_status is not None:
+            st.error(f'Sequence in row {display_idx} contain invalid character ({invalid_seq_status[1]}) at position ({invalid_seq_status[0]})')
+            continue
         seq_len = len(seq)
         seq_type = type_list[idx]
-        org = org_list = org_list[idx]
+        org = org_list[idx]
 
         num_seq_row = math.ceil(seq_len / 60)
         chunk_seq_list = [seq[x:x + 60] for x in range(0, seq_len, 60)]
