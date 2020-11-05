@@ -92,16 +92,13 @@ if st.button('Generate sequence listing in txt'):
     output_str = output_str + process_row('')
     output_str = output_str + process_row('<160>  ' + str(num_entry))
     output_str = output_str + process_row('')
-    output_str = output_str + process_row('<170>  PatentIn version 3.5')
-    output_str = output_str + process_row('')
     for idx in range(num_entry):
         display_idx = idx + 1
         seq = seq_list[idx]
         seq = seq.replace(' ', '').lower()
         invalid_seq_status = check_invalid_seq(seq)
         if invalid_seq_status is not None:
-            st.error(f'Sequence in row {display_idx} contain invalid character ({invalid_seq_status[1]}) at position ({invalid_seq_status[0]})')
-            continue
+            st.warning(f'Sequence in row {display_idx} contain invalid character ({invalid_seq_status[1]}) at position ({invalid_seq_status[0]})')
         seq_len = len(seq)
         seq_type = type_list[idx]
         org = org_list[idx]
