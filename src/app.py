@@ -8,7 +8,7 @@ import json
 import streamlit as st
 import pandas as pd
 
-from parameters import valid_nucleotide, codon_dict, params
+from parameters import valid_nucleotide, valid_aa, codon_dict, aa_1char_3char_dict, params
 from sample_data import sample_dict
 
 
@@ -41,18 +41,21 @@ def seq_row(seq_chunk, segment_len=10):
 
 def check_invalid_seq(seq, mod_dict=None, seq_type='DNA'):
 
-    seq_type = seq_type.lower()
-
-    if (seq_type == 'dna') or (seq_type == 'rna'):
+    if (seq_type == 'DNA') or (seq_type == 'RNA'):
         valid_set = valid_nucleotide.copy()
+    elif (seq_type == 'PRT'):
+        valid_set = valid_aa.copy()
+        seq = seq.split(' ')
+    elif seq_type == 'PRT_1':
+        valid_set = set(aa_1char_3char_dict.keys())
 
     if mod_dict is not None:
         mod_set = set(mod_dict.keys())
         valid_set = valid_set.union(mod_set)
 
-    for i, char in enumerate(seq):
-        if char not in valid_set:
-            return [i, char]
+    for i, element in enumerate(seq):
+        if element not in valid_set:
+            return [i, element]
 
     return None
 
@@ -100,6 +103,27 @@ def check_cds(display_idx, cds):
         return None
 
 
+def add_aa_list(output_str, segment_aa_list, aa_count):
+    # amino acid line
+    aa_line_output = ' '.join(segment_aa_list)
+    output_str = add_line(output_str, aa_line_output, num_id=None, num_blank_lines=0)
+
+    # amino acid position line
+    aa_count_line_output = ''
+    for i, aa in enumerate(segment_aa_list):
+        aa_count += 1
+        if (aa_count == 1) or (aa_count % 5 == 0):
+            str_aa_count = str(aa_count)
+            pad_len = 3 - len(str_aa_count)
+            pad = ' ' * pad_len
+            aa_count_line_output = aa_count_line_output + pad + str_aa_count + ' '
+        else:
+            aa_count_line_output = aa_count_line_output + ' ' * 4
+    output_str = add_line(output_str, aa_count_line_output, num_id=None, num_blank_lines=1)
+
+    return output_str, aa_count
+
+
 def add_nucleotide_no_cds(display_idx, seq, output_str, extra_line_break=True, last_nn_count=0):
     seq_len = len(seq)
     chunk_seq_list = [seq[x:x + 60] for x in range(0, seq_len, 60)]
@@ -141,30 +165,34 @@ def add_nucleotide_with_cds(display_idx, seq, output_str, cds):
         line_output = seq_chunk_separated + pad + line_count_str
         output_str = add_line(output_str, line_output, num_id=None, num_blank_lines=0)
 
-        # output amino acid
+        # output for amino acid
         codon_list = seq_chunk_separated.split(' ')
-        aa_list = [codon_dict[codon.replace('u', 't')] for codon in codon_list]
-        aa_line_output = ' '.join(aa_list)
-        output_str = add_line(output_str, aa_line_output, num_id=None, num_blank_lines=0)
 
-        # output amino acid position
-        aa_count_line_output = ''
-        for i, aa in enumerate(aa_list):
-            aa_count += 1
-            if (aa_count == 1) or (aa_count % 5 == 0):
-                str_aa_count = str(aa_count)
-                pad_len = 3 - len(str_aa_count)
-                pad = ' ' * pad_len
-                aa_count_line_output = aa_count_line_output + pad + str_aa_count + ' '
-            else:
-                aa_count_line_output = aa_count_line_output + ' ' * 4
-        output_str = add_line(output_str, aa_count_line_output, num_id=None, num_blank_lines=1)
+        segment_aa_list = [codon_dict[codon.replace('u', 't')] for codon in codon_list]
+
+        output_str, aa_count = add_aa_list(output_str, segment_aa_list, aa_count)
 
     if len(b4_cds) > 0:
         last_nn_count = len(b4_cds) + len(cds_region)
         output_str = add_nucleotide_no_cds(display_idx, b4_cds, output_str, extra_line_break=True, last_nn_count=last_nn_count)
 
     return output_str
+
+def add_amino_acid(display_idx, aa_3char_seq, output_str):
+    aa_list = aa_3char_seq.split(' ')
+    chunk_aa_list = [aa_list[x:x + 16] for x in range(0, len(aa_list), 16)]
+
+    aa_count = 0
+    for i, aa_chunk in enumerate(chunk_aa_list):
+        output_str, aa_count = add_aa_list(output_str, aa_chunk, aa_count)
+
+    return output_str
+
+def convert_aa_1char_3char(aa_1char):
+    aa_1char = aa_1char.upper()
+    aa_3char = [aa_1char_3char_dict[char] for char in aa_1char]
+    aa_3char_seq = ' '.join(aa_3char)
+    return aa_3char_seq
 
 def add_line(output_str, content, num_id=None, num_blank_lines=0):
     line_str = ''
@@ -179,7 +207,6 @@ def add_line(output_str, content, num_id=None, num_blank_lines=0):
 
     # Add blank lines
     line_str = line_str + ' \n' * num_blank_lines
-
     output_str = output_str + line_str
 
     return output_str
@@ -222,7 +249,7 @@ if st.button('Generate sequence listing in txt'):
     for idx in range(num_entry):
         display_idx = idx + 1
         seq = str(seq_list[idx])
-        seq_type = str(type_list[idx])
+        seq_type = str(type_list[idx]).upper()
         org = str(org_list[idx])
         cds = str(cds_list[idx])
         mod = str((mod_list[idx]))
@@ -235,7 +262,16 @@ if st.button('Generate sequence listing in txt'):
 
         mod_dict = process_mod(mod)
 
-        seq = seq.replace(' ', '').lower()
+        if (seq_type == 'DNA') or (seq_type == 'RNA'):
+            seq = seq.replace(' ', '').lower()
+            others_code = 'n'
+            others_output = 'n'
+        elif (seq_type == 'PRT_1') or (seq_type == 'PRT'):
+            others_output = 'Xaa'
+            others_code = 'X'
+        else:
+            st.warning(f'Sequence type in row {display_idx} ({seq_type}) is unknown')
+        
         invalid_seq_status = check_invalid_seq(seq, mod_dict=mod_dict, seq_type=seq_type)
         if invalid_seq_status is not None:
             st.warning(f'Sequence in row {display_idx} contain invalid \
@@ -246,7 +282,7 @@ if st.button('Generate sequence listing in txt'):
 
         output_str = add_line(output_str, display_idx, num_id=210, num_blank_lines=0)
         output_str = add_line(output_str, seq_len, num_id=211, num_blank_lines=0)
-        output_str = add_line(output_str, seq_type, num_id=212, num_blank_lines=0)
+        output_str = add_line(output_str, seq_type[:3], num_id=212, num_blank_lines=0)
         output_str = add_line(output_str, org, num_id=213, num_blank_lines=1)
 
         if mod_dict is not None:
@@ -257,15 +293,23 @@ if st.button('Generate sequence listing in txt'):
                         output_str = add_line(output_str, '', num_id=220, num_blank_lines=0)
                         output_str = add_line(output_str, 'misc_feature', num_id=221, num_blank_lines=0)
                         output_str = add_line(output_str, f'({location})..({location})', num_id=222, num_blank_lines=0)
-                        output_str = add_line(output_str, f'n = {feature}', num_id=223, num_blank_lines=1)
-                seq = seq.replace(key, 'n')
+                        output_str = add_line(output_str, f'{others_output} = {feature}', num_id=223, num_blank_lines=1)
+                seq = seq.replace(key, others_code)
 
         output_str = add_line(output_str, display_idx, num_id=400, num_blank_lines=0)
 
-        if cds is None:
-            output_str = add_nucleotide_no_cds(display_idx, seq, output_str)
-        else:
-            output_str = add_nucleotide_with_cds(display_idx, seq, output_str, cds)
+        if seq_type == 'PRT_1':
+            seq_type = 'PRT'
+            seq = convert_aa_1char_3char(seq)
+
+        if (seq_type == 'DNA') or (seq_type == 'RNA'):
+            if cds is None:
+                output_str = add_nucleotide_no_cds(display_idx, seq, output_str)
+            else:
+                output_str = add_nucleotide_with_cds(display_idx, seq, output_str, cds)
+        elif seq_type == 'PRT':
+            output_str = add_amino_acid(display_idx, seq, output_str)
+
 
     tmp_download_link = download_link(output_str,
                                       'Sequence_listing.txt',
