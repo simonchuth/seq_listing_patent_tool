@@ -1,3 +1,5 @@
+params = {'line_width': 74}
+
 valid_nucleotide = set(['a',
                         'g',
                         'c',
@@ -79,4 +81,7 @@ codon_dict = {'ttt': 'Phe',
               'ggc': 'Gly',
               'gga': 'Gly',
               'ggg': 'Gly'}
+
+
+
 
