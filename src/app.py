@@ -8,7 +8,7 @@ import json
 import streamlit as st
 import pandas as pd
 
-from parameters import valid_nucleotide
+from parameters import valid_nucleotide, codon_dict, params
 from sample_data import sample_dict
 
 
@@ -33,8 +33,8 @@ def download_link(object_to_download, download_filename, download_link_text):
 
     return f'<a href="data:file/txt;base64,{b64}" download="{download_filename}">{download_link_text}</a>'
 
-def seq_row(seq_chunk):
-    chunklist = [seq_chunk[x:x + 10] for x in range(0, len(seq_chunk), 10)]
+def seq_row(seq_chunk, segment_len=10):
+    chunklist = [seq_chunk[x:x + segment_len] for x in range(0, len(seq_chunk), segment_len)]
     seq_chunk_separated = ' '.join(chunklist)
     return seq_chunk_separated
 
@@ -99,6 +99,72 @@ def check_cds(display_idx, cds):
     else:
         return None
 
+
+def add_nucleotide_no_cds(display_idx, seq, output_str, extra_line_break=True, last_nn_count=0):
+    seq_len = len(seq)
+    chunk_seq_list = [seq[x:x + 60] for x in range(0, seq_len, 60)]
+
+    for i, seq_chunk in enumerate(chunk_seq_list):
+        seq_chunk_separated = seq_row(seq_chunk, segment_len=10)
+        chunk_len = len(seq_chunk)
+        line_count = last_nn_count + chunk_len + i * 60
+        line_count_str = str(line_count)
+        pad_len = params['line_width'] - len(seq_chunk_separated) - len(line_count_str)
+        pad = ' ' * pad_len
+        line_output = seq_chunk_separated + pad + line_count_str
+        output_str = add_line(output_str, line_output, num_id=None, num_blank_lines=1)
+    if extra_line_break:
+        output_str = add_line(output_str, '', num_id=None, num_blank_lines=0)
+
+    return output_str
+
+
+def add_nucleotide_with_cds(display_idx, seq, output_str, cds):
+    b4_cds = seq[:cds[0] - 1]
+    aft_cds = seq[cds[1]:]
+    cds_region = seq[cds[0] - 1: cds[1]]
+
+    if len(b4_cds) > 0:
+        output_str = add_nucleotide_no_cds(display_idx, b4_cds, output_str, extra_line_break=False)
+    
+    aa_count = 0
+    chunk_seq_list = [cds_region[x:x + 48] for x in range(0, seq_len, 48)]
+    for i, seq_chunk in enumerate(chunk_seq_list):
+        if len(seq_chunk) == 0:
+            break
+        seq_chunk_separated = seq_row(seq_chunk, segment_len=3)
+        chunk_len = len(seq_chunk)
+        line_count = chunk_len + i * 48 + len(b4_cds)
+        line_count_str = str(line_count)
+        pad_len = params['line_width'] - len(seq_chunk_separated) - len(line_count_str)
+        pad = ' ' * pad_len
+        line_output = seq_chunk_separated + pad + line_count_str
+        output_str = add_line(output_str, line_output, num_id=None, num_blank_lines=0)
+
+        # output amino acid
+        codon_list = seq_chunk_separated.split(' ')
+        aa_list = [codon_dict[codon.replace('u', 't')] for codon in codon_list]
+        aa_line_output = ' '.join(aa_list)
+        output_str = add_line(output_str, aa_line_output, num_id=None, num_blank_lines=0)
+
+        # output amino acid position
+        aa_count_line_output = ''
+        for i, aa in enumerate(aa_list):
+            aa_count += 1
+            if (aa_count == 1) or (aa_count % 5 == 0):
+                str_aa_count = str(aa_count)
+                pad_len = 3 - len(str_aa_count)
+                pad = ' ' * pad_len
+                aa_count_line_output = aa_count_line_output + pad + str_aa_count + ' '
+            else:
+                aa_count_line_output = aa_count_line_output + ' ' * 4
+        output_str = add_line(output_str, aa_count_line_output, num_id=None, num_blank_lines=1)
+
+    if len(b4_cds) > 0:
+        last_nn_count = len(b4_cds) + len(cds_region)
+        output_str = add_nucleotide_no_cds(display_idx, b4_cds, output_str, extra_line_break=True, last_nn_count=last_nn_count)
+
+    return output_str
 
 def add_line(output_str, content, num_id=None, num_blank_lines=0):
     line_str = ''
@@ -196,18 +262,10 @@ if st.button('Generate sequence listing in txt'):
 
         output_str = add_line(output_str, display_idx, num_id=400, num_blank_lines=0)
 
-        chunk_seq_list = [seq[x:x + 60] for x in range(0, seq_len, 60)]
-
-        for i, seq_chunk in enumerate(chunk_seq_list):
-            seq_chunk_separated = seq_row(seq_chunk)
-            chunk_len = len(seq_chunk)
-            line_count = chunk_len + i * 60
-            line_count_str = str(line_count)
-            pad_len = 74 - len(seq_chunk_separated) - len(line_count_str)
-            pad = ' ' * pad_len
-            line_output = seq_chunk_separated + pad + line_count_str
-            output_str = add_line(output_str, line_output, num_id=None, num_blank_lines=1)
-        output_str = add_line(output_str, '', num_id=None, num_blank_lines=0)
+        if cds is None:
+            output_str = add_nucleotide_no_cds(display_idx, seq, output_str)
+        else:
+            output_str = add_nucleotide_with_cds(display_idx, seq, output_str, cds)
 
     tmp_download_link = download_link(output_str,
                                       'Sequence_listing.txt',
