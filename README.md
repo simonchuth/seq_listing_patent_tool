@@ -1,10 +1,8 @@
 # Tools for generating sequence listing for patent application
 
-## Work in progress
-
 ## Introduction
 
-This tool is designed to generate a sequence listing in the format prescribed by WIPO Standard ST.25. The user can use the template csv file to upload multiple sequences to the app to generate the sequence listing. 
+This tool is designed to generate a sequence listing in the format prescribed by WIPO. The user can use the template csv file to define multiple sequences for the app to generate the sequence listing. This allow rapid generation of sequence listing, as opposed to some other tools, where user have to enter the sequence one by one. This allow the use to save a lot of time in the preparation of sequence listing for patent application.
 
 ## Installation
 
@@ -28,9 +26,21 @@ Use the `iptables` to redirect the traffic from port 80 to port 8501 (before run
 iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8501
 ```
 
+## User Guide
+**Landing Page** <br>
+<img src = 'figures/1_landing_page.JPG'>
+1. Enter the mandatory information such as `Applicant Name`, `Title of Invention`, and `File Reference`
+2. Click on `Template file for sequence listing` to download the latest template file (Must use this csv file to upload the sequence, do NOT add/delete/change the columns in the csv file)
+3. Drag and drop the csv file to `Choose a file`
 
+**Example of page furnished with details** <br>
+<img src = 'figures/2_example.JPG'>
 
+4. Click `Generate sequence listing in txt`
 
+<img src = 'figures/3_result.JPG'>
+
+5. Click `Download your sequence listing` to download the sequence listing
 
 <!-- Reference links -->
 [1]: https://git-scm.com/downloads
