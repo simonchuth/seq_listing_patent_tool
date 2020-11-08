@@ -124,4 +124,3 @@ aa_1char_3char_dict = {'G': 'Gly',
                        'D': 'Asp',
                        'T': 'Thr',
                        'X': 'Xaa'}
-

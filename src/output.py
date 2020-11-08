@@ -1,5 +1,7 @@
 from parameters import params, codon_dict
 from utils import seq_row
+from check import check_cds_region
+import streamlit as st
 
 
 def add_aa_list(output_str, segment_aa_list, aa_count):
@@ -73,6 +75,9 @@ def add_nucleotide_with_cds(display_idx, seq, output_str, cds):
 
     aa_count = 0
     seq_len = len(cds_region)
+
+    cds_region = check_cds_region(display_idx, cds_region)
+
     chunk_seq_list = [cds_region[x:x + 48] for x in range(0, seq_len, 48)]
     for i, seq_chunk in enumerate(chunk_seq_list):
         if len(seq_chunk) == 0:
@@ -93,8 +98,14 @@ def add_nucleotide_with_cds(display_idx, seq, output_str, cds):
         # output for amino acid
         codon_list = seq_chunk_separated.split(' ')
 
-        segment_aa_list = [codon_dict[codon.replace('u', 't')]
-                           for codon in codon_list]
+        try:
+            segment_aa_list = [codon_dict[codon.replace('u', 't')]
+                               for codon in codon_list]
+        except KeyError:
+            st.warning(f'Row {display_idx}: There are invalid codons  or \
+                         termination codon within the CDS region. \
+                         {codon_list}')
+            continue
 
         output_str, aa_count = add_aa_list(output_str,
                                            segment_aa_list,

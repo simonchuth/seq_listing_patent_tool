@@ -52,3 +52,40 @@ def check_cds(display_idx, cds):
 
     else:
         return None
+
+
+def check_valid_codon(display_idx, codon, position='first'):
+    codon = codon.lower()
+    codon = codon.replace('u', 't')
+    if position == 'first':
+        if codon != 'atg':
+            st.warning(f'Row {display_idx}: The first codon ({codon}) \
+                        is not ATG/AUG. Is there a mistake?')
+        return True
+
+    elif position == 'last':
+        if (
+            (codon == 'tag')
+            or (codon == 'taa')
+            or (codon == 'tga')
+           ):
+
+            st.warning(f'Row {display_idx}: No need to include the \
+                        termination codon')
+            return False
+        return True
+
+
+def check_cds_region(display_idx, cds_region):
+    seq_len = len(cds_region)
+    if seq_len < 3:
+        st.warning(f'Row {display_idx}: Sequence length of CDS region is \
+                     too short')
+    else:
+        first_codon = cds_region[:3]
+        last_codon = cds_region[-3:]
+        check_valid_codon(display_idx, first_codon, position='first')
+        if not check_valid_codon(display_idx, last_codon, position='last'):
+            cds_region = cds_region[:-3]
+
+    return cds_region
