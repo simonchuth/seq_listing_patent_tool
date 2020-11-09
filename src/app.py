@@ -17,6 +17,17 @@ from output import add_other_info
 
 st.title('Sequence Listing Tool')
 
+n_tab = 'target="_blank" rel="noopener noreferrer"'
+into_text = (f'This tool was designed to quickly generate a sequence listing \
+               in the format prescribed by WIPO. For more information or \
+               queries, please refer to the \
+               <a {n_tab} href="https://github.com/simonchuth/seq_listing_patent_tool">\
+               project GitHub repo, </a> or contact \
+               <a {n_tab} href="https://www.linkedin.com/in/simonchuth/">\
+               Simon Chu </a>')
+
+st.markdown(into_text, unsafe_allow_html=True)
+
 app_name = st.text_input('Applicant Name')
 
 inv_title = st.text_input('Title of Invention')
@@ -26,8 +37,16 @@ file_ref = st.text_input('File Reference')
 df = pd.DataFrame(sample_dict)
 tmp_download_link = download_link(df,
                                   'template.csv',
-                                  'Template file for sequence listing')
+                                  'Download csv template for sequence listing')
 st.markdown(tmp_download_link, unsafe_allow_html=True)
+
+ncbi_text = (f'Some common species names were given in the template. For the \
+              scientific name of other species, please refer to sources such \
+              as the <a {n_tab} href="https://www.ncbi.nlm.nih.gov/taxonomy">\
+              NCBI Taxonomy Database</a>')
+
+st.markdown(ncbi_text, unsafe_allow_html=True)
+
 uploaded_file = st.file_uploader("Choose a file", type=['csv'])
 
 if uploaded_file is not None:
