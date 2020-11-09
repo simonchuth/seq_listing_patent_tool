@@ -135,14 +135,75 @@ def add_amino_acid(display_idx, aa_3char_seq, output_str):
     return output_str
 
 
-def add_line(output_str, content, num_id=None, num_blank_lines=0):
+def add_other_info(output_str, info):
+
+    output_str = add_line(output_str, '', num_id=220)
+
+    word_token = info.split(' ')
+
+    chunk_info_list = []
+
+    pointer = 0
+    line_output = ''
+
+    while pointer < len(word_token):
+        new_word = word_token[pointer]
+
+        # +1 for space between words
+        new_line_len = len(line_output) + 1 + len(new_word)
+
+        if len(new_word) > 60:
+            if len(line_output) != 0:
+                chunk_info_list.append(line_output)
+                chunk_info_list.append(new_word)
+            else:
+                chunk_info_list.append(new_word)
+            line_output = ''
+            pointer += 1
+            continue
+
+        if new_line_len <= 60:
+            line_output += f' {new_word}'
+            pointer += 1
+            continue
+        else:
+            chunk_info_list.append(line_output)
+            line_output = new_word
+            pointer += 1
+            continue
+
+    chunk_info_list.append(line_output)  # append the last line of chunk text
+
+    for i, info_segment in enumerate(chunk_info_list):
+        if i == 0:
+            output_str = add_line(output_str,
+                                  info_segment.strip(' '),
+                                  num_id=223)
+        else:
+            output_str = add_line(output_str,
+                                  info_segment.strip(' '),
+                                  tab_space=True)
+
+    output_str = add_line(output_str, '')
+
+    return output_str
+
+
+def add_line(output_str,
+             content,
+             num_id=None,
+             num_blank_lines=0,
+             tab_space=False):
+
     line_str = ''
 
     if not isinstance(content, str):
         content = str(content)
 
     if num_id is not None:
-        line_str = line_str + f'<{num_id}>  '
+        line_str += f'<{num_id}>  '
+    elif tab_space:
+        line_str += f'       '
 
     line_str = line_str + content + ' \n'
 

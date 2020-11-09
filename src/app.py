@@ -12,6 +12,7 @@ from output import add_line
 from output import add_nucleotide_no_cds
 from output import add_nucleotide_with_cds
 from output import add_amino_acid
+from output import add_other_info
 
 
 st.title('Sequence Listing Tool')
@@ -38,6 +39,7 @@ type_list = df['Sample_Type'].tolist()
 org_list = df['Organism'].tolist()
 cds_list = df['CDS_Range'].tolist()
 mod_list = df['Modified_Legend'].tolist()
+info_list = df['Other_Information'].tolist()
 
 num_entry = len(seq_list)
 
@@ -55,7 +57,8 @@ if st.button('Generate sequence listing in txt'):
         seq_type = str(type_list[idx]).upper()
         org = str(org_list[idx])
         cds = str(cds_list[idx])
-        mod = str((mod_list[idx]))
+        mod = str(mod_list[idx])
+        info = str(info_list[idx])
 
         check_nan(display_idx, {'Sequence': seq,
                                 'Sequence Type': seq_type,
@@ -102,6 +105,9 @@ if st.button('Generate sequence listing in txt'):
                               org,
                               num_id=213,
                               num_blank_lines=1)
+
+        if info != 'nan':
+            output_str = add_other_info(output_str, info)
 
         if mod_dict is not None:
             for key, feature in mod_dict.items():
